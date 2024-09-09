@@ -85,7 +85,7 @@ def accept_game():
 
         # Проверяем, оба ли ПК готовы для начала игры
         if pc_states["pc1"] and pc_states["pc2"]:
-            return jsonify({"status": "both_ready"})
+            return jsonify({"status": "both_accepted"})
         else:
             return jsonify({"status": "waiting"})
 
