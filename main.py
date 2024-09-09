@@ -77,8 +77,10 @@ def accept_game():
     with global_lock:
         # Проверяем, какой ПК готов принять игру
         if data["pc"] == "pc1":
+            print(f"ПК1 готов: {pc_states['pc1']}")
             pc_states["pc1"] = True
         elif data["pc"] == "pc2":
+            print(f"ПК2 готов: {pc_states['pc2']}")
             pc_states["pc2"] = True
 
         # Проверяем, оба ли ПК готовы для начала игры
