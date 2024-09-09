@@ -69,6 +69,25 @@ def ready():
             return jsonify({"status": "waiting"})
 
 
+@app.route("/accept_game", methods=["POST"])
+def accept_game():
+    global pc_states
+    data = request.json
+
+    with global_lock:
+        # Проверяем, какой ПК готов принять игру
+        if data["pc"] == "pc1":
+            pc_states["pc1"] = True
+        elif data["pc"] == "pc2":
+            pc_states["pc2"] = True
+
+        # Проверяем, оба ли ПК готовы для начала игры
+        if pc_states["pc1"] and pc_states["pc2"]:
+            return jsonify({"status": "both_ready"})
+        else:
+            return jsonify({"status": "waiting"})
+
+
 @app.route("/reset", methods=["POST"])
 def reset():
     global pc_states, pc_timestamps
