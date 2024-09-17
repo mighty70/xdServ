@@ -5,13 +5,12 @@ import requests
 
 app = Flask(__name__)
 
-# Состояние ПК и время
 pc_states = {"pc1": False, "pc2": False}
 pc_timestamps = {"pc1": None, "pc2": None}
+cancel_timers = {"pc1": None, "pc2": None}
 
 global_lock = threading.Lock()
 
-# Конфигурация Telegram
 TELEGRAM_BOT_TOKEN = "7319554213:AAHezVAl7fX5_FProDns16Af3GAgW0Yw7lA"
 TELEGRAM_CHAT_ID = 5682336970
 
@@ -28,14 +27,18 @@ def check_timeout():
         with global_lock:
             current_time = time.time()
             if pc_timestamps["pc1"] and not pc_states["pc2"]:
-                if current_time - pc_timestamps["pc1"] > 90:  # 3 минуты = 180 секунд
-                    send_telegram_message(
-                        "ПК1 нашёл кнопку, но ПК2 не готов в течение 3 минут.")
+                if current_time - pc_timestamps["pc1"] > 90:
+                    send_telegram_message("ПК1 нашёл кнопку, но ПК2 не готов в течение 3 минут.")
             if pc_timestamps["pc2"] and not pc_states["pc1"]:
                 if current_time - pc_timestamps["pc2"] > 90:
-                    send_telegram_message(
-                        "ПК2 нашёл кнопку, но ПК1 не готов в течение 3 минут.")
+                    send_telegram_message("ПК2 нашёл кнопку, но ПК1 не готов в течение 3 минут.")
         time.sleep(30) 
+
+def reset_pc_state(pc):
+    with global_lock:
+        pc_states[pc] = False
+        pc_timestamps[pc] = None
+        send_telegram_message(f"Запрос от {pc} сброшен через 10 секунд ожидания второго ПК.")
 
 @app.route("/", methods=["GET"])
 def index():
@@ -43,46 +46,70 @@ def index():
 
 @app.route("/ready", methods=["POST"])
 def ready():
-    global pc_states, pc_timestamps
+    global pc_states, pc_timestamps, cancel_timers
     data = request.json
 
     with global_lock:
-        if data["pc"] == "pc1":
-            pc_states["pc1"] = True
-            pc_timestamps["pc1"] = time.time()
-        elif data["pc"] == "pc2":
-            pc_states["pc2"] = True
-            pc_timestamps["pc2"] = time.time()
+        pc = data["pc"]
+        pc_states[pc] = True
+        pc_timestamps[pc] = time.time()
+
+        if cancel_timers[pc]:
+            cancel_timers[pc].cancel()
+
+        timer = threading.Timer(10.0, reset_pc_state, args=[pc])
+        cancel_timers[pc] = timer
+        timer.start()
 
         if pc_states["pc1"] and pc_states["pc2"]:
+            if cancel_timers["pc1"]:
+                cancel_timers["pc1"].cancel()
+            if cancel_timers["pc2"]:
+                cancel_timers["pc2"].cancel()
             return jsonify({"status": "both_ready"})
         else:
             return jsonify({"status": "waiting"})
 
 @app.route("/accept_game", methods=["POST"])
 def accept_game():
-    global pc_states
+    global pc_states, pc_timestamps, cancel_timers
     data = request.json
 
     with global_lock:
-        if data["pc"] == "pc1":
-            pc_states["pc1"] = True
-        elif data["pc"] == "pc2":
-            pc_states["pc2"] = True
+        pc = data["pc"]
+        pc_states[pc] = True
+        pc_timestamps[pc] = time.time()
+
+        if cancel_timers[pc]:
+            cancel_timers[pc].cancel()
+
+        timer = threading.Timer(10.0, reset_pc_state, args=[pc])
+        cancel_timers[pc] = timer
+        timer.start()
 
         if pc_states["pc1"] and pc_states["pc2"]:
+            if cancel_timers["pc1"]:
+                cancel_timers["pc1"].cancel()
+            if cancel_timers["pc2"]:
+                cancel_timers["pc2"].cancel()
             return jsonify({"status": "game_accepted", "message": "Оба ПК приняли игру."})
         else:
             return jsonify({"status": "waiting_for_accept", "message": "Ожидание принятия игры вторым ПК."})
 
 @app.route("/reset", methods=["POST"])
 def reset():
-    global pc_states, pc_timestamps
+    global pc_states, pc_timestamps, cancel_timers
     with global_lock:
         pc_states["pc1"] = False
         pc_states["pc2"] = False
         pc_timestamps["pc1"] = None
         pc_timestamps["pc2"] = None
+
+        if cancel_timers["pc1"]:
+            cancel_timers["pc1"].cancel()
+        if cancel_timers["pc2"]:
+            cancel_timers["pc2"].cancel()
+
     return jsonify({"status": "reset"})
 
 if __name__ == "__main__":
