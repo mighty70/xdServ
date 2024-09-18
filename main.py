@@ -12,9 +12,8 @@ timeout_timers = {"pc1": None, "pc2": None}
 
 global_lock = threading.Lock()
 
-# Конфигурация Telegram
-TELEGRAM_BOT_TOKEN = "YOUR_TOKEN"
-TELEGRAM_CHAT_ID = YOUR_CHAT_ID
+TELEGRAM_BOT_TOKEN = "7319554213:AAHezVAl7fX5_FProDns16Af3GAgW0Yw7lA"
+TELEGRAM_CHAT_ID = 5682336970
 
 def send_telegram_message(message):
     """Функция для отправки сообщения в Telegram"""
