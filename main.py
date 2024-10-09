@@ -39,7 +39,7 @@ def start_reset_timer(pc):
     global timeout_timers
     if timeout_timers[pc]:
         timeout_timers[pc].cancel()  # Отменяем предыдущий таймер, если он был
-    timer = threading.Timer(30, reset_pc_states)
+    timer = threading.Timer(10, reset_pc_states)
     timer.start()
     timeout_timers[pc] = timer
 
