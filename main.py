@@ -100,6 +100,10 @@ def accept_game():
 
         # Проверяем, оба ли ПК готовы принять игру
         if pc_states["pc1"] and pc_states["pc2"]:
+            # Оба ПК готовы, выполняем действия по принятию игры и сбрасываем состояния
+            print("Оба ПК готовы. Выполняем действие game_accepted.")
+            reset_pc_state("pc1")
+            reset_pc_state("pc2")
             return jsonify({"status": "game_accepted", "message": "Оба ПК приняли игру."})
         else:
             return jsonify({"status": "waiting_for_accept", "message": "Ожидание принятия игры вторым ПК."})
